@@ -13,9 +13,9 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState("lists")
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema Auto Dialer</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema AutoDialer</h1>
         <p className="text-gray-600">Gerencie listas de chamadas e dispositivos conectados</p>
       </div>
 
@@ -42,39 +42,15 @@ export default function HomePage() {
         </TabsList>
 
         <TabsContent value="lists">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Listas de Chamadas</CardTitle>
-              <CardDescription>Crie e gerencie listas de números para discagem automática</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CallListManager />
-            </CardContent>
-          </Card>
+          <CallListManager />
         </TabsContent>
 
         <TabsContent value="devices">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dispositivos Conectados</CardTitle>
-              <CardDescription>Monitore e gerencie dispositivos Android conectados</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DeviceManager />
-            </CardContent>
-          </Card>
+          <DeviceManager />
         </TabsContent>
 
         <TabsContent value="qrcode">
-          <Card>
-            <CardHeader>
-              <CardTitle>Conectar Dispositivo</CardTitle>
-              <CardDescription>Gere um QR Code para conectar novos dispositivos Android</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <QRCodeGenerator />
-            </CardContent>
-          </Card>
+          <QRCodeGenerator />
         </TabsContent>
 
         <TabsContent value="status">
