@@ -1,89 +1,90 @@
 interface Device {
-  id: string
-  name: string
-  status: "connected" | "disconnected" | "calling"
-  lastSeen: Date
+  sessionId: string
+  deviceType: string
+  status: string
+  lastSeen: number
+  isConnected: boolean
+  callsToday?: number
   currentList?: string
-  callsActive: number
-  callsCompleted: number
-  version?: string
 }
 
 class DeviceManager {
   private devices: Map<string, Device> = new Map()
-  private readonly TIMEOUT_MS = 60000 // 1 minuto
+  private connectionTimeout = 30000 // 30 seconds
 
-  addDevice(id: string, name: string, version?: string): Device {
+  addDevice(sessionId: string, deviceType = "android"): Device {
     const device: Device = {
-      id,
-      name,
+      sessionId,
+      deviceType,
       status: "connected",
-      lastSeen: new Date(),
-      callsActive: 0,
-      callsCompleted: 0,
-      version,
+      lastSeen: Date.now(),
+      isConnected: true,
+      callsToday: 0,
     }
 
-    this.devices.set(id, device)
+    this.devices.set(sessionId, device)
     return device
   }
 
-  updateDevice(id: string, updates: Partial<Device>): Device | null {
-    const device = this.devices.get(id)
-    if (!device) return null
-
-    Object.assign(device, updates, { lastSeen: new Date() })
-    return device
-  }
-
-  getDevice(id: string): Device | null {
-    return this.devices.get(id) || null
-  }
-
-  getAllDevices(): Device[] {
-    this.checkTimeouts()
-    return Array.from(this.devices.values())
-  }
-
-  removeDevice(id: string): boolean {
-    return this.devices.delete(id)
-  }
-
-  heartbeat(id: string): boolean {
-    const device = this.devices.get(id)
+  updateDevice(sessionId: string, updates: Partial<Device>): boolean {
+    const device = this.devices.get(sessionId)
     if (!device) return false
 
-    device.lastSeen = new Date()
-    if (device.status === "disconnected") {
-      device.status = "connected"
-    }
+    Object.assign(device, updates, { lastSeen: Date.now() })
     return true
   }
 
-  private checkTimeouts(): void {
-    const now = new Date()
+  getDevice(sessionId: string): Device | undefined {
+    return this.devices.get(sessionId)
+  }
 
-    for (const [id, device] of this.devices.entries()) {
-      const timeDiff = now.getTime() - device.lastSeen.getTime()
+  getAllDevices(): Device[] {
+    return Array.from(this.devices.values())
+  }
 
-      if (timeDiff > this.TIMEOUT_MS && device.status !== "disconnected") {
+  removeDevice(sessionId: string): boolean {
+    return this.devices.delete(sessionId)
+  }
+
+  updateLastSeen(sessionId: string): boolean {
+    const device = this.devices.get(sessionId)
+    if (!device) return false
+
+    device.lastSeen = Date.now()
+    device.isConnected = true
+    return true
+  }
+
+  checkConnections(): void {
+    const now = Date.now()
+
+    for (const [sessionId, device] of this.devices.entries()) {
+      if (now - device.lastSeen > this.connectionTimeout) {
+        device.isConnected = false
         device.status = "disconnected"
       }
     }
   }
 
-  getConnectedCount(): number {
-    return this.getAllDevices().filter((d) => d.status === "connected").length
+  getConnectedDevices(): Device[] {
+    return this.getAllDevices().filter((device) => device.isConnected)
   }
 
-  getTotalCalls(): number {
-    return this.getAllDevices().reduce((sum, d) => sum + d.callsCompleted, 0)
-  }
+  getDeviceStats(): { total: number; connected: number; disconnected: number } {
+    const devices = this.getAllDevices()
+    const connected = devices.filter((d) => d.isConnected).length
 
-  getActiveCalls(): number {
-    return this.getAllDevices().reduce((sum, d) => sum + d.callsActive, 0)
+    return {
+      total: devices.length,
+      connected,
+      disconnected: devices.length - connected,
+    }
   }
 }
 
 export const deviceManager = new DeviceManager()
-export type { Device }
+
+// Check connections every 10 seconds
+setInterval(() => {
+  deviceManager.checkConnections()
+}, 10000)

@@ -1,38 +1,34 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { addMessageToQueue } from "../poll/route"
+import { messageQueue } from "@/lib/message-queue"
+import { deviceManager } from "@/lib/device-manager"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const sessionId = request.nextUrl.searchParams.get("session")
+    const { sessionId, type, data } = body
 
-    if (!sessionId) {
-      return NextResponse.json({ error: "Session ID é obrigatório" }, { status: 400 })
+    if (!sessionId || !type) {
+      return NextResponse.json({ success: false, error: "Session ID and message type required" }, { status: 400 })
     }
 
-    const { type, data } = body
-
-    if (!type || !data) {
-      return NextResponse.json({ error: "Tipo e dados são obrigatórios" }, { status: 400 })
+    // Check if device exists
+    const device = deviceManager.getDevice(sessionId)
+    if (!device) {
+      return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 })
     }
 
-    // Adicionar mensagem à fila do dispositivo
-    addMessageToQueue(sessionId, type, data)
+    // Add message to queue
+    const messageId = messageQueue.addMessage(sessionId, type, data)
 
-    console.log("📤 Mensagem enviada para dispositivo:", {
-      sessionId,
-      type,
-      dataKeys: Object.keys(data),
-    })
+    console.log(`Message queued for device ${sessionId}: ${type}`)
 
     return NextResponse.json({
       success: true,
-      message: "Mensagem enviada com sucesso",
-      sessionId,
-      type,
+      messageId: messageId,
+      message: "Message queued successfully",
     })
   } catch (error) {
-    console.error("❌ Erro no endpoint /send:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    console.error("Error in send API:", error)
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

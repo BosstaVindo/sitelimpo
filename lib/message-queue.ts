@@ -1,74 +1,76 @@
 interface QueueMessage {
   id: string
-  deviceId: string
-  type: "CALL_LIST" | "CONTROL" | "STATUS"
+  sessionId: string
+  type: string
   data: any
-  timestamp: Date
+  timestamp: number
   retries: number
 }
 
 class MessageQueue {
-  private queue: Map<string, QueueMessage[]> = new Map()
+  private queues: Map<string, QueueMessage[]> = new Map()
   private maxRetries = 3
+  private retryDelay = 5000
 
-  addMessage(deviceId: string, type: QueueMessage["type"], data: any): string {
+  addMessage(sessionId: string, type: string, data: any): string {
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
     const message: QueueMessage = {
-      id: Math.random().toString(36).substr(2, 9),
-      deviceId,
+      id: messageId,
+      sessionId,
       type,
       data,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       retries: 0,
     }
 
-    if (!this.queue.has(deviceId)) {
-      this.queue.set(deviceId, [])
+    if (!this.queues.has(sessionId)) {
+      this.queues.set(sessionId, [])
     }
 
-    this.queue.get(deviceId)!.push(message)
-    return message.id
+    this.queues.get(sessionId)!.push(message)
+    return messageId
   }
 
-  getMessages(deviceId: string): QueueMessage[] {
-    return this.queue.get(deviceId) || []
+  getMessages(sessionId: string): QueueMessage[] {
+    return this.queues.get(sessionId) || []
   }
 
-  removeMessage(deviceId: string, messageId: string): boolean {
-    const messages = this.queue.get(deviceId)
-    if (!messages) return false
+  removeMessage(sessionId: string, messageId: string): boolean {
+    const queue = this.queues.get(sessionId)
+    if (!queue) return false
 
-    const index = messages.findIndex((m) => m.id === messageId)
+    const index = queue.findIndex((msg) => msg.id === messageId)
     if (index === -1) return false
 
-    messages.splice(index, 1)
+    queue.splice(index, 1)
     return true
   }
 
-  retryMessage(deviceId: string, messageId: string): boolean {
-    const messages = this.queue.get(deviceId)
-    if (!messages) return false
+  clearQueue(sessionId: string): void {
+    this.queues.delete(sessionId)
+  }
 
-    const message = messages.find((m) => m.id === messageId)
+  getAllQueues(): Map<string, QueueMessage[]> {
+    return this.queues
+  }
+
+  retryMessage(sessionId: string, messageId: string): boolean {
+    const queue = this.queues.get(sessionId)
+    if (!queue) return false
+
+    const message = queue.find((msg) => msg.id === messageId)
     if (!message) return false
 
     if (message.retries >= this.maxRetries) {
-      this.removeMessage(deviceId, messageId)
+      this.removeMessage(sessionId, messageId)
       return false
     }
 
     message.retries++
-    message.timestamp = new Date()
+    message.timestamp = Date.now() + this.retryDelay
     return true
-  }
-
-  clearDevice(deviceId: string): void {
-    this.queue.delete(deviceId)
-  }
-
-  getQueueSize(deviceId: string): number {
-    return this.queue.get(deviceId)?.length || 0
   }
 }
 
 export const messageQueue = new MessageQueue()
-export type { QueueMessage }

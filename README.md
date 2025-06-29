@@ -1,136 +1,166 @@
-# Sistema Auto Dialer
+# AutoDialer System
 
-Sistema completo de discagem automática com interface web e aplicativo Android.
+Sistema completo de chamadas automáticas com conferência para dispositivos Android.
 
 ## 🚀 Funcionalidades
 
-### Interface Web
-- **Gerenciamento de Listas**: Criar, editar e enviar listas de números
-- **Monitoramento de Dispositivos**: Visualizar dispositivos conectados em tempo real
-- **Gerador QR Code**: Conectar novos dispositivos facilmente
-- **Dashboard**: Estatísticas e status do sistema
+- **Painel Web Completo**: Interface moderna para gerenciar listas e dispositivos
+- **Conexão via QR Code**: Conecte dispositivos Android facilmente
+- **Gerenciamento de Listas**: Crie, edite e gerencie listas de números
+- **Conferências Automáticas**: Até 6 números por conferência
+- **Monitoramento em Tempo Real**: Acompanhe dispositivos e chamadas
+- **Sistema de Polling**: Comunicação estável entre web e mobile
 
-### Aplicativo Android
-- **Discagem Automática**: Até 6 chamadas simultâneas
-- **Gerenciamento de Conferências**: Controle inteligente de chamadas
-- **Conexão HTTP Polling**: Comunicação estável com o servidor
-- **Interface Intuitiva**: Fácil de usar e configurar
+## 🛠️ Tecnologias
 
-## 📋 Pré-requisitos
+- **Frontend**: Next.js 14, React 18, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **UI Components**: Radix UI, Lucide Icons
+- **QR Code**: qrcode library
+- **Deploy**: Render, Vercel
 
-- Node.js 18+
-- NPM ou Yarn
-- Android Studio (para compilar o app)
+## 📦 Instalação
 
-## 🛠️ Instalação
+### Desenvolvimento Local
 
-### 1. Clone o repositório
 \`\`\`bash
+# Clone o repositório
 git clone https://github.com/seu-usuario/autodialer-system.git
 cd autodialer-system
-\`\`\`
 
-### 2. Instale as dependências
-\`\`\`bash
+# Instale as dependências
 npm install
-\`\`\`
 
-### 3. Execute o servidor
-\`\`\`bash
+# Execute em modo desenvolvimento
 npm run dev
 \`\`\`
 
-### 4. Acesse o sistema
-Abra http://localhost:3000 no seu navegador
+Acesse: http://localhost:3000
 
-## 🌐 Deploy no Render
+### Deploy no Render
 
-### 1. Conecte o GitHub
-- Faça login no Render.com
-- Conecte sua conta GitHub
-- Selecione este repositório
+1. **Fork** este repositório
+2. **Conecte** sua conta GitHub ao Render
+3. **Crie** um novo Web Service
+4. **Selecione** seu repositório
+5. **Deploy automático** via `render.yaml`
 
-### 2. Configuração Automática
-O arquivo `render.yaml` configura automaticamente:
-- Build: `npm install && npm run build`
-- Start: `npm start`
-- Port: 10000
+### Deploy na Vercel
 
-### 3. Variáveis de Ambiente
-- `NODE_ENV`: production
-- `PORT`: 10000
-
-## 📱 Compilar App Android
-
-### 1. Abra no Android Studio
 \`\`\`bash
-cd android-app
+# Instale a CLI da Vercel
+npm i -g vercel
+
+# Deploy
+vercel
 \`\`\`
-
-### 2. Configure o projeto
-- Abra o Android Studio
-- Importe o projeto
-- Sincronize o Gradle
-
-### 3. Compile e instale
-- Build > Build APK
-- Instale no dispositivo Android
 
 ## 🎯 Como Usar
 
-### 1. Configurar Dispositivo
-1. Acesse a aba "QR Code" no painel web
-2. Gere um QR Code
-3. Escaneie com o app Android
-4. Dispositivo aparecerá na aba "Dispositivos"
+### 1. Painel Web
+- Acesse a URL do seu deploy
+- Use as 4 abas principais: Listas, Dispositivos, QR Code, Status
 
-### 2. Criar Lista
-1. Vá para aba "Listas"
-2. Clique em "Nova Lista"
-3. Adicione números (formato: +5511999999999)
-4. Salve a lista
+### 2. Conectar Dispositivo Android
+- Vá para a aba "QR Code"
+- Gere um QR Code
+- Escaneie no app Android
+- Dispositivo aparecerá na aba "Dispositivos"
 
-### 3. Enviar Lista
-1. Selecione a lista criada
-2. Escolha o dispositivo de destino
-3. Clique em "Enviar Lista"
-4. O app Android iniciará as chamadas automaticamente
+### 3. Criar Lista de Chamadas
+- Vá para a aba "Listas"
+- Clique em "Nova Lista"
+- Adicione nome e números (um por linha)
+- Salve a lista
 
-### 4. Monitorar
-- Acompanhe o status na aba "Dispositivos"
-- Veja estatísticas na aba "Status"
-- Monitore chamadas em tempo real
+### 4. Enviar Lista para Dispositivos
+- Na lista criada, clique "Enviar para Dispositivos"
+- O app Android receberá a lista
+- Chamadas começarão automaticamente
 
-## 🔧 API Endpoints
+## 📱 App Android
 
-### Listas
-- `GET /api/lists` - Listar todas as listas
-- `POST /api/lists` - Criar nova lista
-- `PUT /api/lists/:id` - Atualizar lista
-- `DELETE /api/lists/:id` - Deletar lista
+O aplicativo Android deve ser compilado separadamente com os arquivos Java/Kotlin fornecidos.
 
-### Dispositivos
-- `GET /api/devices` - Listar dispositivos
+### Funcionalidades do App:
+- **Escaneamento de QR Code**
+- **Conexão automática com servidor**
+- **Recebimento de listas via polling**
+- **Conferências automáticas (até 6 números)**
+- **Auto-restart após chamadas**
+- **Interface de monitoramento**
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente (Opcional)
+\`\`\`env
+NODE_ENV=production
+PORT=10000
+\`\`\`
+
+### Estrutura de Arquivos
+\`\`\`
+autodialer-system/
+├── app/
+│   ├── components/          # Componentes React
+│   ├── api/                # API Routes
+│   └── globals.css         # Estilos globais
+├── components/ui/          # Componentes UI
+├── lib/                   # Utilitários
+├── public/               # Arquivos estáticos
+└── README.md
+\`\`\`
+
+## 🌐 APIs Disponíveis
+
+- `GET /api/health` - Health check
+- `GET /api/lists` - Buscar listas
+- `POST /api/lists` - Criar/gerenciar listas
+- `GET /api/devices` - Buscar dispositivos
+- `POST /api/devices` - Gerenciar dispositivos
 - `POST /api/connect` - Conectar dispositivo
 - `POST /api/poll` - Polling de mensagens
-- `POST /api/send` - Enviar mensagem
+- `POST /api/send` - Enviar mensagens
 
-### Sistema
-- `GET /health` - Health check
+## 🎨 Interface
 
-## 🛡️ Segurança
+### Telas Principais:
+1. **Listas**: Criar e gerenciar listas de números
+2. **Dispositivos**: Monitorar dispositivos conectados
+3. **QR Code**: Gerar códigos para conexão
+4. **Status**: Estatísticas do sistema
 
-- Validação de números de telefone
-- Controle de rate limiting
-- Sanitização de dados
-- Logs de auditoria
+### Recursos da Interface:
+- ✅ Design responsivo
+- ✅ Tema moderno
+- ✅ Notificações em tempo real
+- ✅ Atualização automática
+- ✅ Indicadores de status
 
-## 📊 Monitoramento
+## 🔍 Monitoramento
 
-- Status de dispositivos em tempo real
-- Estatísticas de chamadas
-- Logs de sistema
-- Alertas de desconexão
+- **Status de Conexão**: Indicador em tempo real
+- **Dispositivos Online**: Contador de dispositivos ativos
+- **Chamadas Realizadas**: Estatísticas de uso
+- **Health Check**: Endpoint para monitoramento
+
+## 🚨 Troubleshooting
+
+### Problemas Comuns:
+
+1. **Build Error**: Verifique se todas as dependências estão instaladas
+2. **QR Code não funciona**: Verifique a URL do servidor
+3. **Dispositivo não conecta**: Verifique a conexão de internet
+4. **Listas não aparecem**: Verifique os logs da API
+
+### Logs:
+- Render: Dashboard > Logs
+- Vercel: Dashboard > Functions > Logs
+- Local: Terminal do `npm run dev`
+
+## 📄 Licença
+
+MIT License - veja o arquivo LICENSE para detalhes.
 
 ## 🤝 Contribuição
 
@@ -140,30 +170,13 @@ cd android-app
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
-## 📝 Licença
-
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
-
-## 🆘 Suporte
+## 📞 Suporte
 
 Para suporte e dúvidas:
 - Abra uma issue no GitHub
-- Entre em contato via email
-
-## 🔄 Atualizações
-
-### v2.1.0
-- Interface web completa
-- Sistema de polling otimizado
-- Melhorias na UI/UX
-- Deploy automático no Render
-
-### v2.0.0
-- Reescrita completa do sistema
-- Nova arquitetura de comunicação
-- Interface moderna
-- Suporte a múltiplos dispositivos
+- Verifique a documentação
+- Consulte os logs de erro
 
 ---
 
-**Sistema Auto Dialer** - Desenvolvido com ❤️ para automação de chamadas
+**AutoDialer System v2.1.0** - Sistema completo de chamadas automáticas 🚀

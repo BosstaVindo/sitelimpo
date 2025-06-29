@@ -1,62 +1,41 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Copy, Download, RefreshCw } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { RefreshCw, Download, Copy, Check } from "lucide-react"
 import QRCode from "qrcode"
 
-interface QRCodeGeneratorProps {
-  serverUrl?: string
-  sessionId?: string
-}
-
-export default function QRCodeGenerator({ serverUrl, sessionId }: QRCodeGeneratorProps) {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
-  const [qrData, setQrData] = useState<string>("")
+export default function QRCodeGenerator() {
+  const [qrCodeUrl, setQrCodeUrl] = useState("")
+  const [serverUrl, setServerUrl] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [customServerUrl, setCustomServerUrl] = useState(serverUrl || "https://autodialer-system.onrender.com")
-  const [customSessionId, setCustomSessionId] = useState(sessionId || "")
+  const [copied, setCopied] = useState(false)
 
-  const generateSessionId = () => {
-    const timestamp = Date.now()
-    const random = Math.random().toString(36).substring(2, 10)
-    return `session_${timestamp}_${random}`
-  }
+  useEffect(() => {
+    // Auto-detect server URL
+    if (typeof window !== "undefined") {
+      const url = window.location.origin
+      setServerUrl(url)
+      generateQRCode(url)
+    }
+  }, [])
 
-  const generateQRCode = async () => {
+  const generateQRCode = async (url?: string) => {
+    const targetUrl = url || serverUrl
+    if (!targetUrl) return
+
     setIsGenerating(true)
-
     try {
-      const finalSessionId = customSessionId || generateSessionId()
-      const baseUrl = customServerUrl.replace(/\/$/, "") // Remove trailing slash
-
-      const connectionData = {
-        type: "autodialer_connection_http",
-        server_url: baseUrl,
-        session_id: finalSessionId,
-        connection_type: "http_polling",
-        polling_interval: 3000,
-        server_name: "AutoDialer Server",
+      const qrData = JSON.stringify({
+        serverUrl: targetUrl,
         timestamp: Date.now(),
-        version: "2.1",
-        endpoints: {
-          connect: `${baseUrl}/api/connect?session=${finalSessionId}`,
-          poll: `${baseUrl}/api/poll?session=${finalSessionId}`,
-          send: `${baseUrl}/api/send?session=${finalSessionId}`,
-          health: `${baseUrl}/health?session=${finalSessionId}`,
-        },
-      }
+        version: "2.1.0",
+      })
 
-      const jsonData = JSON.stringify(connectionData, null, 2)
-      setQrData(jsonData)
-
-      // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL(jsonData, {
+      const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
         width: 300,
         margin: 2,
         color: {
@@ -66,37 +45,10 @@ export default function QRCodeGenerator({ serverUrl, sessionId }: QRCodeGenerato
       })
 
       setQrCodeUrl(qrCodeDataUrl)
-      setCustomSessionId(finalSessionId)
-
-      toast({
-        title: "✅ QR Code gerado",
-        description: `Sessão: ${finalSessionId.substring(0, 20)}...`,
-      })
     } catch (error) {
-      console.error("Erro ao gerar QR Code:", error)
-      toast({
-        title: "❌ Erro",
-        description: "Falha ao gerar QR Code",
-        variant: "destructive",
-      })
+      console.error("Error generating QR code:", error)
     } finally {
       setIsGenerating(false)
-    }
-  }
-
-  const copyQRData = async () => {
-    try {
-      await navigator.clipboard.writeText(qrData)
-      toast({
-        title: "📋 Copiado",
-        description: "Dados do QR Code copiados para a área de transferência",
-      })
-    } catch (error) {
-      toast({
-        title: "❌ Erro",
-        description: "Falha ao copiar dados",
-        variant: "destructive",
-      })
     }
   }
 
@@ -104,138 +56,96 @@ export default function QRCodeGenerator({ serverUrl, sessionId }: QRCodeGenerato
     if (!qrCodeUrl) return
 
     const link = document.createElement("a")
-    link.download = `autodialer-qr-${customSessionId}.png`
+    link.download = "autodialer-qrcode.png"
     link.href = qrCodeUrl
     link.click()
-
-    toast({
-      title: "💾 Download iniciado",
-      description: "QR Code salvo como imagem",
-    })
   }
 
-  useEffect(() => {
-    if (serverUrl && sessionId) {
-      generateQRCode()
+  const copyServerUrl = async () => {
+    if (!serverUrl) return
+
+    try {
+      await navigator.clipboard.writeText(serverUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error("Error copying to clipboard:", error)
     }
-  }, [serverUrl, sessionId])
+  }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">📱 Gerador de QR Code</CardTitle>
-        <CardDescription>Gere um QR Code para conectar dispositivos Android ao sistema AutoDialer</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Configurações */}
-        <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">Conectar Dispositivo Android</h2>
+        <p className="text-muted-foreground">Escaneie o QR Code no aplicativo Android para conectar ao servidor</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Configuração do Servidor</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
             <Label htmlFor="serverUrl">URL do Servidor</Label>
-            <Input
-              id="serverUrl"
-              value={customServerUrl}
-              onChange={(e) => setCustomServerUrl(e.target.value)}
-              placeholder="https://autodialer-system.onrender.com"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="sessionId">Session ID (opcional)</Label>
-            <div className="flex gap-2">
+            <div className="flex space-x-2">
               <Input
-                id="sessionId"
-                value={customSessionId}
-                onChange={(e) => setCustomSessionId(e.target.value)}
-                placeholder="Deixe vazio para gerar automaticamente"
+                id="serverUrl"
+                value={serverUrl}
+                onChange={(e) => setServerUrl(e.target.value)}
+                placeholder="https://seu-servidor.com"
               />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCustomSessionId(generateSessionId())}
-                title="Gerar novo Session ID"
-              >
-                <RefreshCw className="h-4 w-4" />
+              <Button variant="outline" onClick={copyServerUrl} disabled={!serverUrl}>
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
           </div>
-        </div>
 
-        {/* Botão para gerar */}
-        <Button onClick={generateQRCode} disabled={isGenerating || !customServerUrl} className="w-full">
-          {isGenerating ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Gerando QR Code...
-            </>
-          ) : (
-            "🔄 Gerar QR Code"
-          )}
-        </Button>
+          <Button onClick={() => generateQRCode()} disabled={isGenerating || !serverUrl} className="w-full">
+            {isGenerating ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Gerar QR Code
+          </Button>
+        </CardContent>
+      </Card>
 
-        {/* QR Code gerado */}
-        {qrCodeUrl && (
-          <div className="space-y-4">
+      {qrCodeUrl && (
+        <Card>
+          <CardHeader>
+            <CardTitle>QR Code para Conexão</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
             <div className="flex justify-center">
-              <div className="p-4 bg-white rounded-lg border">
-                <img
-                  src={qrCodeUrl || "/placeholder.svg"}
-                  alt="QR Code para conexão AutoDialer"
-                  className="w-64 h-64"
-                />
-              </div>
+              <img src={qrCodeUrl || "/placeholder.svg"} alt="QR Code para conexão" className="border rounded-lg" />
             </div>
 
-            {/* Ações */}
-            <div className="flex gap-2 justify-center">
-              <Button variant="outline" onClick={copyQRData}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copiar Dados
-              </Button>
-              <Button variant="outline" onClick={downloadQRCode}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PNG
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Escaneie este QR Code no aplicativo Android</p>
+              <Button variant="outline" onClick={downloadQRCode} className="w-full bg-transparent">
+                <Download className="h-4 w-4 mr-2" />
+                Baixar QR Code
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Informações da sessão */}
-            <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-semibold mb-2">📋 Informações da Conexão:</h4>
-              <div className="text-sm space-y-1">
-                <p>
-                  <strong>Servidor:</strong> {customServerUrl}
-                </p>
-                <p>
-                  <strong>Sessão:</strong> {customSessionId}
-                </p>
-                <p>
-                  <strong>Tipo:</strong> HTTP Polling
-                </p>
-                <p>
-                  <strong>Intervalo:</strong> 3 segundos
-                </p>
-              </div>
-            </div>
-
-            {/* Dados JSON (colapsível) */}
-            <details className="space-y-2">
-              <summary className="cursor-pointer font-semibold">🔍 Ver dados JSON completos</summary>
-              <Textarea value={qrData} readOnly rows={10} className="font-mono text-xs" />
-            </details>
-          </div>
-        )}
-
-        {/* Instruções */}
-        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h4 className="font-semibold text-blue-900 mb-2">📱 Como usar:</h4>
-          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-            <li>Abra o app AutoDialer no Android</li>
-            <li>Toque em "📷 QR Scanner"</li>
-            <li>Escaneie o QR Code gerado acima</li>
+      <Card>
+        <CardHeader>
+          <CardTitle>Instruções</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ol className="list-decimal list-inside space-y-2 text-sm">
+            <li>Abra o aplicativo AutoDialer no seu dispositivo Android</li>
+            <li>Toque no botão "Escanear QR Code"</li>
+            <li>Aponte a câmera para o QR Code acima</li>
             <li>Aguarde a confirmação de conexão</li>
-            <li>O dispositivo estará pronto para receber conferências</li>
+            <li>O dispositivo aparecerá na aba "Dispositivos"</li>
           </ol>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

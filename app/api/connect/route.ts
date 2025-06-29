@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { deviceManager } from "@/lib/device-manager"
 
 // Armazenamento em memória das sessões ativas
 export const activeSessions = new Map<
@@ -16,55 +17,25 @@ export const activeSessions = new Map<
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const sessionId = request.nextUrl.searchParams.get("session") || body.sessionId
+    const { deviceType = "android" } = body
 
-    console.log("🔌 CONNECT Request:", {
-      sessionId,
-      action: body.action,
-      deviceType: body.deviceType,
-      timestamp: new Date().toISOString(),
+    // Generate a unique session ID
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Add device to manager
+    const device = deviceManager.addDevice(sessionId, deviceType)
+
+    console.log(`New device connected: ${sessionId}`)
+
+    return NextResponse.json({
+      success: true,
+      sessionId: sessionId,
+      message: "Device connected successfully",
+      device: device,
     })
-
-    if (!sessionId) {
-      return NextResponse.json({ error: "Session ID é obrigatório" }, { status: 400 })
-    }
-
-    if (body.action === "DEVICE_CONNECT") {
-      // Registrar nova sessão
-      const session = {
-        sessionId,
-        deviceType: body.deviceType || "unknown",
-        status: "connected",
-        connectedAt: Date.now(),
-        lastSeen: Date.now(),
-        userAgent: request.headers.get("user-agent") || undefined,
-      }
-
-      activeSessions.set(sessionId, session)
-
-      console.log("✅ Dispositivo conectado:", {
-        sessionId,
-        deviceType: session.deviceType,
-        userAgent: session.userAgent,
-      })
-
-      return NextResponse.json({
-        status: "connected",
-        sessionId,
-        serverTime: Date.now(),
-        message: "Dispositivo conectado com sucesso",
-        config: {
-          pollingInterval: 3000,
-          heartbeatInterval: 15000,
-          maxRetries: 10,
-        },
-      })
-    }
-
-    return NextResponse.json({ error: "Ação não reconhecida" }, { status: 400 })
   } catch (error) {
-    console.error("❌ Erro no endpoint /connect:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    console.error("Error connecting device:", error)
+    return NextResponse.json({ success: false, error: "Failed to connect device" }, { status: 500 })
   }
 }
 

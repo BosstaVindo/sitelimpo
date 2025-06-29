@@ -6,8 +6,9 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Sistema Auto Dialer",
-  description: "Sistema de discagem automática para conferências",
+  title: "AutoDialer System",
+  description: "Sistema de chamadas automáticas com conferência",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -18,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">{children}</div>
+        <main className="min-h-screen bg-background">{children}</main>
       </body>
     </html>
   )

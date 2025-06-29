@@ -1,84 +1,60 @@
-import { NextResponse } from "next/server"
-import { activeSessions } from "../connect/route"
+import { type NextRequest, NextResponse } from "next/server"
+import { deviceManager } from "@/lib/device-manager"
 
 export async function GET() {
   try {
-    const now = Date.now()
-    const devices = Array.from(activeSessions.entries()).map(([sessionId, session]) => {
-      const timeSinceLastSeen = now - session.lastSeen
-      const isConnected = timeSinceLastSeen < 60000 // Considera conectado se visto nos últimos 60 segundos
-
-      return {
-        sessionId,
-        deviceType: session.deviceType || "unknown",
-        status: session.status,
-        lastSeen: session.lastSeen,
-        lastSeenFormatted: new Date(session.lastSeen).toLocaleString(),
-        timeSinceLastSeen,
-        isConnected,
-        uptime: session.connectedAt ? now - session.connectedAt : 0,
-        userAgent: session.userAgent || "Unknown",
-      }
-    })
-
-    // Ordenar por último acesso (mais recente primeiro)
-    devices.sort((a, b) => b.lastSeen - a.lastSeen)
-
-    console.log("📱 Dispositivos ativos:", {
-      total: devices.length,
-      connected: devices.filter((d) => d.isConnected).length,
-    })
+    const devices = deviceManager.getAllDevices()
+    const stats = deviceManager.getDeviceStats()
 
     return NextResponse.json({
-      devices,
-      summary: {
-        total: devices.length,
-        connected: devices.filter((d) => d.isConnected).length,
-        disconnected: devices.filter((d) => !d.isConnected).length,
-      },
+      success: true,
+      devices: devices,
+      stats: stats,
     })
   } catch (error) {
-    console.error("❌ Erro ao buscar dispositivos:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    console.error("Error fetching devices:", error)
+    return NextResponse.json({ success: false, error: "Failed to fetch devices" }, { status: 500 })
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, device_id } = body
+    const { action, sessionId } = body
 
     switch (action) {
-      case "remove":
-        if (activeSessions.has(device_id)) {
-          activeSessions.delete(device_id)
-          return NextResponse.json({ success: true, message: "Dispositivo removido" })
-        }
-        return NextResponse.json({ error: "Dispositivo não encontrado" }, { status: 404 })
+      case "remove": {
+        const success = deviceManager.removeDevice(sessionId)
 
-      case "remove_disconnected":
-        const now = Date.now()
-        let removedCount = 0
-
-        for (const [sessionId, session] of activeSessions.entries()) {
-          if (now - session.lastSeen > 60000) {
-            // Mais de 1 minuto sem atividade
-            activeSessions.delete(sessionId)
-            removedCount++
-          }
+        if (!success) {
+          return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 })
         }
 
         return NextResponse.json({
           success: true,
-          message: `${removedCount} dispositivos desconectados removidos`,
-          removed_count: removedCount,
+          message: "Device removed successfully",
         })
+      }
+
+      case "update": {
+        const { updates } = body
+        const success = deviceManager.updateDevice(sessionId, updates)
+
+        if (!success) {
+          return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 })
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: "Device updated successfully",
+        })
+      }
 
       default:
-        return NextResponse.json({ error: "Ação não reconhecida" }, { status: 400 })
+        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
     }
   } catch (error) {
-    console.error("❌ Erro ao processar ação:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+    console.error("Error in devices API:", error)
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
