@@ -1,83 +1,47 @@
-"use client"
-
-import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Phone, Users, QrCode, Activity } from "lucide-react"
-import CallListManager from "./components/call-list-manager"
-import DeviceManager from "./components/device-manager"
-import QRCodeGenerator from "./components/qr-code-generator"
-import ConnectionStatus from "./components/connection-status"
+import { CallListManager } from "./components/call-list-manager"
+import { DeviceManager } from "./components/device-manager"
+import { QRCodeGenerator } from "./components/qr-code-generator"
+import { ConnectionStatus } from "./components/connection-status"
 
-export default function HomePage() {
-  const [activeTab, setActiveTab] = useState("lists")
-
+export default function Home() {
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema AutoDialer</h1>
-        <p className="text-gray-600">Gerencie listas de chamadas e dispositivos conectados</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema AutoDialer</h1>
+          <p className="text-gray-600">Gerencie listas de chamadas e dispositivos conectados</p>
+        </div>
+
+        <ConnectionStatus />
+
+        <Tabs defaultValue="lists" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="lists">Listas de Chamadas</TabsTrigger>
+            <TabsTrigger value="devices">Dispositivos</TabsTrigger>
+            <TabsTrigger value="qr">QR Code</TabsTrigger>
+            <TabsTrigger value="status">Status</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="lists" className="mt-6">
+            <CallListManager />
+          </TabsContent>
+
+          <TabsContent value="devices" className="mt-6">
+            <DeviceManager />
+          </TabsContent>
+
+          <TabsContent value="qr" className="mt-6">
+            <QRCodeGenerator />
+          </TabsContent>
+
+          <TabsContent value="status" className="mt-6">
+            <div className="grid gap-4">
+              <ConnectionStatus />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <ConnectionStatus />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="lists" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            Listas
-          </TabsTrigger>
-          <TabsTrigger value="devices" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Dispositivos
-          </TabsTrigger>
-          <TabsTrigger value="qrcode" className="flex items-center gap-2">
-            <QrCode className="h-4 w-4" />
-            QR Code
-          </TabsTrigger>
-          <TabsTrigger value="status" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Status
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="lists">
-          <CallListManager />
-        </TabsContent>
-
-        <TabsContent value="devices">
-          <DeviceManager />
-        </TabsContent>
-
-        <TabsContent value="qrcode">
-          <QRCodeGenerator />
-        </TabsContent>
-
-        <TabsContent value="status">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status do Sistema</CardTitle>
-              <CardDescription>Monitore o status geral do sistema e estatísticas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-blue-900">Dispositivos Ativos</h3>
-                  <p className="text-2xl font-bold text-blue-600">0</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-green-900">Chamadas Hoje</h3>
-                  <p className="text-2xl font-bold text-green-600">0</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-purple-900">Listas Ativas</h3>
-                  <p className="text-2xl font-bold text-purple-600">0</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

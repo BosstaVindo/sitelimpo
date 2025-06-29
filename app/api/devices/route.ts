@@ -1,60 +1,45 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { deviceManager } from "@/lib/device-manager"
 
 export async function GET() {
   try {
     const devices = deviceManager.getAllDevices()
-    const stats = deviceManager.getDeviceStats()
 
     return NextResponse.json({
       success: true,
-      devices: devices,
-      stats: stats,
+      devices,
+      count: devices.length,
     })
   } catch (error) {
-    console.error("Error fetching devices:", error)
-    return NextResponse.json({ success: false, error: "Failed to fetch devices" }, { status: 500 })
+    return NextResponse.json({ success: false, error: "Erro ao buscar dispositivos" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { action, sessionId } = body
+    const { deviceId, deviceName, action } = body
+
+    if (!deviceId) {
+      return NextResponse.json({ success: false, error: "Device ID é obrigatório" }, { status: 400 })
+    }
 
     switch (action) {
-      case "remove": {
-        const success = deviceManager.removeDevice(sessionId)
-
-        if (!success) {
-          return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 })
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: "Device removed successfully",
-        })
-      }
-
-      case "update": {
-        const { updates } = body
-        const success = deviceManager.updateDevice(sessionId, updates)
-
-        if (!success) {
-          return NextResponse.json({ success: false, error: "Device not found" }, { status: 404 })
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: "Device updated successfully",
-        })
-      }
-
+      case "register":
+        deviceManager.registerDevice(deviceId, deviceName || `Device ${deviceId}`)
+        break
+      case "update_status":
+        deviceManager.updateDeviceStatus(deviceId, body.status)
+        break
+      case "ping":
+        deviceManager.updateLastSeen(deviceId)
+        break
       default:
-        return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
+        return NextResponse.json({ success: false, error: "Ação inválida" }, { status: 400 })
     }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error in devices API:", error)
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, error: "Erro ao processar requisição" }, { status: 500 })
   }
 }

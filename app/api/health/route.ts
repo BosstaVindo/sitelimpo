@@ -1,36 +1,29 @@
 import { NextResponse } from "next/server"
+import { deviceManager } from "@/lib/device-manager"
 
 export async function GET() {
   try {
-    const healthData = {
+    const devices = deviceManager.getAllDevices()
+    const connectedDevices = devices.filter((d) => d.status !== "offline").length
+    const activeConnections = devices.filter((d) => d.status === "busy").length
+
+    return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      connectedDevices,
+      activeConnections,
+      totalDevices: devices.length,
       version: "2.1.0",
-      environment: process.env.NODE_ENV || "development",
-      memory: process.memoryUsage(),
-    }
-
-    console.log("🏥 [HEALTH] Health check requested")
-
-    return NextResponse.json({
-      success: true,
-      data: healthData,
     })
   } catch (error) {
-    console.error("❌ [HEALTH] Health check failed:", error)
-
-    return NextResponse.json({ status: "error", error: "Health check failed" }, { status: 500 })
+    return NextResponse.json(
+      {
+        status: "error",
+        error: "Health check failed",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 },
+    )
   }
-}
-
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  })
 }

@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "AutoDialer System",
-  description: "Sistema de chamadas automáticas com conferência",
+  description: "Sistema de discagem automática para conferências",
     generator: 'v0.dev'
 }
 
@@ -18,9 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
-        <main className="min-h-screen bg-background">{children}</main>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }

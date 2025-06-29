@@ -3,80 +3,87 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Wifi, WifiOff, Server, AlertCircle } from "lucide-react"
+import { Wifi, WifiOff, Server, Users } from "lucide-react"
 
-export default function ConnectionStatus() {
-  const [isOnline, setIsOnline] = useState(true)
-  const [serverStatus, setServerStatus] = useState<"online" | "offline" | "checking">("checking")
+interface SystemStatus {
+  server: "online" | "offline"
+  connectedDevices: number
+  activeConnections: number
+  lastUpdate: number
+}
 
-  const checkServerStatus = async () => {
-    try {
-      const response = await fetch("/api/health", {
-        method: "GET",
-        cache: "no-cache",
-      })
-
-      if (response.ok) {
-        setServerStatus("online")
-      } else {
-        setServerStatus("offline")
-      }
-    } catch (error) {
-      setServerStatus("offline")
-    }
-  }
+export function ConnectionStatus() {
+  const [status, setStatus] = useState<SystemStatus>({
+    server: "offline",
+    connectedDevices: 0,
+    activeConnections: 0,
+    lastUpdate: Date.now(),
+  })
 
   useEffect(() => {
-    // Check initial server status
-    checkServerStatus()
-
-    // Check server status every 30 seconds
-    const serverInterval = setInterval(checkServerStatus, 30000)
-
-    // Monitor browser online/offline status
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-
-    return () => {
-      clearInterval(serverInterval)
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
+    const checkStatus = async () => {
+      try {
+        const response = await fetch("/api/health")
+        if (response.ok) {
+          const data = await response.json()
+          setStatus({
+            server: "online",
+            connectedDevices: data.connectedDevices || 0,
+            activeConnections: data.activeConnections || 0,
+            lastUpdate: Date.now(),
+          })
+        } else {
+          setStatus((prev) => ({ ...prev, server: "offline", lastUpdate: Date.now() }))
+        }
+      } catch (error) {
+        setStatus((prev) => ({ ...prev, server: "offline", lastUpdate: Date.now() }))
+      }
     }
+
+    checkStatus()
+    const interval = setInterval(checkStatus, 10000) // Verifica a cada 10 segundos
+
+    return () => clearInterval(interval)
   }, [])
-
-  const getStatusColor = () => {
-    if (!isOnline || serverStatus === "offline") return "destructive"
-    if (serverStatus === "checking") return "secondary"
-    return "default"
-  }
-
-  const getStatusText = () => {
-    if (!isOnline) return "Sem conexão com a internet"
-    if (serverStatus === "offline") return "Servidor offline"
-    if (serverStatus === "checking") return "Verificando conexão..."
-    return "Sistema online"
-  }
-
-  const getStatusIcon = () => {
-    if (!isOnline) return <WifiOff className="h-4 w-4" />
-    if (serverStatus === "offline") return <AlertCircle className="h-4 w-4" />
-    if (serverStatus === "checking") return <Server className="h-4 w-4" />
-    return <Wifi className="h-4 w-4" />
-  }
 
   return (
     <Card className="mb-6">
-      <CardContent className="flex items-center justify-between p-4">
-        <div className="flex items-center space-x-2">
-          <Badge variant={getStatusColor()} className="flex items-center">
-            {getStatusIcon()}
-            <span className="ml-2">{getStatusText()}</span>
-          </Badge>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {status.server === "online" ? (
+                <Wifi className="h-5 w-5 text-green-500" />
+              ) : (
+                <WifiOff className="h-5 w-5 text-red-500" />
+              )}
+              <div>
+                <p className="font-semibold">Status do Sistema</p>
+                <p className="text-sm text-gray-500">
+                  Última atualização: {new Date(status.lastUpdate).toLocaleTimeString("pt-BR")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Server className="h-4 w-4 text-gray-500" />
+              <Badge variant={status.server === "online" ? "default" : "destructive"}>
+                {status.server === "online" ? "Online" : "Offline"}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium">{status.connectedDevices} dispositivos</span>
+            </div>
+
+            {status.activeConnections > 0 && (
+              <Badge className="bg-blue-100 text-blue-800">{status.activeConnections} ativas</Badge>
+            )}
+          </div>
         </div>
-        <div className="text-sm text-muted-foreground">{new Date().toLocaleTimeString()}</div>
       </CardContent>
     </Card>
   )

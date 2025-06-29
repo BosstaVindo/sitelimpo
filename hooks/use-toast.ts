@@ -1,19 +1,24 @@
 "use client"
 
-type ToastProps = {
-  title?: string
-  description?: string
-  variant?: "default" | "destructive"
-}
+import * as React from "react"
 
-type ToasterToast = ToastProps & {
+type ToastProps = {
   id: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: React.ReactElement
+  variant?: "default" | "destructive"
 }
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
+
+type ToasterToast = ToastProps & {
+  id: string
+  title?: React.ReactNode
+  description?: React.ReactNode
+  action?: React.ReactElement
+}
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -25,7 +30,7 @@ const actionTypes = {
 let count = 0
 
 function genId() {
-  count = (count + 1) % Number.MAX_SAFE_INTEGER
+  count = (count + 1) % Number.MAX_VALUE
   return count.toString()
 }
 
@@ -88,8 +93,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -135,22 +138,55 @@ function dispatch(action: Action) {
   })
 }
 
-function toast({ title, description, variant = "default" }: ToastProps) {
-  // Simple console log for now - in production you'd use a proper toast library
-  console.log(`Toast [${variant}]: ${title} - ${description}`)
+type Toast = Omit<ToasterToast, "id">
 
-  // You can implement a proper toast system here
-  if (typeof window !== "undefined") {
-    if (variant === "destructive") {
-      alert(`Error: ${title}\n${description}`)
-    } else {
-      alert(`${title}\n${description}`)
-    }
+function toast({ ...props }: Toast) {
+  const id = genId()
+
+  const update = (props: ToasterToast) =>
+    dispatch({
+      type: "UPDATE_TOAST",
+      toast: { ...props, id },
+    })
+  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+
+  dispatch({
+    type: "ADD_TOAST",
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
+      },
+    },
+  })
+
+  return {
+    id: id,
+    dismiss,
+    update,
   }
 }
 
 function useToast() {
-  return { toast }
+  const [state, setState] = React.useState<State>(memoryState)
+
+  React.useEffect(() => {
+    listeners.push(setState)
+    return () => {
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [state])
+
+  return {
+    ...state,
+    toast,
+    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
+  }
 }
 
-export { useToast }
+export { useToast, toast }
